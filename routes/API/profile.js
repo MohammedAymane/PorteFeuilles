@@ -10,12 +10,16 @@ const User = require("../../models/User");
 // @access private
 router.get("/me", auth, async (req, res) => {
   try {
+    console.log(req.user.id);
     const profile = await Profile.findOne({
       user: req.user.id,
     }).populate("user", ["name", "avatar"]);
     if (!profile) {
-      return res.status(400).json({ msg: "There is no profile for this user" });
+      {
+        return res.status(400).json({ msg: "Profile not found" });
+      }
     }
+    res.send(profile);
   } catch (err) {
     console.error(err.message);
     res.status(500).send("Server error get me profile");
@@ -110,6 +114,46 @@ router.get("/", async (req, res) => {
     res.json(profile);
   } catch (err) {
     console.error(err.message);
+    res.status(500).send("Server Error get profile");
+  }
+});
+
+// @route GET api/profile/user/:user_id
+// @desk Get profile by ID
+// @access Public
+router.get("/user/:user_id", async (req, res) => {
+  try {
+    const profile = await Profile.find({
+      user: req.params.user_id,
+    }).populate("user", ["name", "avatar"]);
+    if (!profile) {
+      return res.status(400).json({ msg: "Profile not found" });
+    }
+    res.json(profile);
+  } catch (err) {
+    console.error(err.message);
+    if ((err.kind = "OnjectIds")) {
+      return res.status(400).json({ msg: "Profile not found" });
+    }
+    res.status(500).send("Server Error get profile");
+  }
+});
+
+// @route DELET api/profile
+// @desk Delet profile, users & posts
+// @access Private
+router.delete("/", auth, async (req, res) => {
+  try {
+    // @todo - remove users posts
+
+    // Remove profile
+    await Profile.findOneAndRemove({ user: req.user.id });
+
+    // Remove user
+    await User.findOneAndRemove({ user: req.user.id });
+
+    res.json({ msg: "User deleted" });
+  } catch (err) {
     res.status(500).send("Server Error get profile");
   }
 });
